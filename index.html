@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Guide to Kerala's Top Destinations</title>
+    <!-- Chosen Palette: Warm Neutrals (Stone, Amber, Muted Teal, Purple for Spiritual, Dark Green for Nature & Wildlife) -->
+    <!-- Application Structure Plan: The application uses a filter-driven dashboard structure, enhanced with a comprehensive introductory overview section. This design was chosen over a linear list to empower users to explore destinations based on their personal travel interests (e.g., "Hill Stations," "Backwaters") while also providing essential context and travel tips. The main user flow involves first reading the "About This Guide" for background, then selecting a theme via prominent filter buttons or an interactive chart, which instantly updates a grid of destination cards. Clicking a card reveals detailed information in a modal window, allowing for deep dives without losing context. This non-linear, task-oriented approach makes trip planning more efficient and engaging than reading a static report. -->
+    <!-- Visualization & Content Choices:
+        - Report Info: Introductory text, Top 20 list summary, Travel Tips -> Goal: Inform & Contextualize -> Viz/Presentation: Dedicated text section with paragraphs and list (HTML/Tailwind CSS) -> Interaction: Static text for reading. -> Justification: Provides crucial background, specific recommendations, and practical advice, setting user expectations for the data presented.
+        - Report Info: Destination Types (Hill Station, Backwater, etc.) -> Goal: Organize & Compare -> Viz/Presentation: Interactive Doughnut Chart (Chart.js/Canvas) & Filter Buttons -> Interaction: Click a chart slice or button to filter the main destination grid. -> Justification: Provides a quick visual summary of offerings and acts as an intuitive primary navigation, allowing users to guide their own discovery.
+        - Report Info: List of Top 20 Destinations (new data) -> Goal: Inform & Organize -> Viz/Presentation: Responsive Card Grid (HTML/Tailwind CSS) -> Interaction: Hover for subtle effect, click to view details. -> Justification: Presents destinations in a scannable, visually appealing format that works well on all devices, now with updated content.
+        - Report Info: Detailed Destination Descriptions (new data) -> Goal: Inform -> Viz/Presentation: Modal Popup (HTML/Tailwind/JS) -> Interaction: Appears on card click, can be closed. -> Justification: Allows users to access in-depth information without navigating away from the main exploration interface, maintaining a seamless user experience.
+        - Report Info: Thematic Highlights (Ayurveda, Culture) -> Goal: Inform -> Viz/Presentation: Styled text sections with icons (HTML/Tailwind) -> Interaction: Static content for reading. -> Justification: Groups overarching themes for users interested in cross-cutting cultural experiences, adding another layer of information.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            scroll-behavior: smooth;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 450px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 400px;
+            }
+        }
+        .modal {
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .modal-content {
+            transition: transform 0.3s ease;
+        }
+        .active-filter {
+            transform: scale(1.05);
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.5);
+        }
+        /* Google Translate specific styling to integrate better */
+        #google_translate_element {
+            display: inline-block;
+            vertical-align: middle;
+            margin-left: 1rem; /* Adjust as needed for spacing */
+        }
+        .goog-te-gadget {
+            font-family: 'Inter', sans-serif !important;
+            font-size: 0.875rem; /* text-sm */
+            color: #4b5563; /* stone-600 */
+        }
+        .goog-te-gadget-simple {
+            border: 1px solid #d1d5db; /* stone-300 */
+            border-radius: 0.5rem; /* rounded-md */
+            padding: 0.25rem 0.5rem;
+            background-color: #fff;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+        .goog-te-gadget-simple .goog-te-menu-value span {
+            color: #4b5563 !important; /* stone-600 */
+        }
+        .goog-te-gadget-simple .goog-te-menu-value span:hover {
+            color: #0d9488 !important; /* teal-600 */
+        }
+        /* Hide Google Translate branding */
+        .goog-logo-link {
+            display: none !important;
+        }
+        .goog-te-gadget .goog-te-info-link {
+            display: none !important;
+        }
+        body > .skiptranslate {
+            display: none !important;
+        }
+        .goog-tooltip {
+            display: none !important;
+        }
+        .goog-tooltip:hover {
+            display: none !important;
+        }
+        .goog-text-highlight {
+            background-color: transparent !important;
+            box-shadow: none !important;
+        }
+    </style>
+</head>
+<body class="bg-stone-50 text-stone-800">
+
+    <div id="app-container">
+        <!-- Header Section -->
+        <header class="bg-white shadow-sm sticky top-0 z-40">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+                <h1 class="text-2xl md:text-3xl font-bold text-teal-700">Explore Kerala</h1>
+                <nav class="flex items-center">
+                    <a href="#overview" class="text-stone-600 hover:text-teal-600 px-3 py-2 rounded-md text-sm font-medium">Overview</a>
+                    <a href="#explorer" class="text-stone-600 hover:text-teal-600 px-3 py-2 rounded-md text-sm font-medium">Explorer</a>
+                    <a href="#themes" class="text-stone-600 hover:text-teal-600 px-3 py-2 rounded-md text-sm font-medium">Themes</a>
+                    <!-- Google Translate Widget Placeholder -->
+                    <div id="google_translate_element" class="ml-4"></div>
+                </nav>
+            </div>
+        </header>
+
+        <!-- Hero Section -->
+        <section class="py-16 md:py-24 bg-teal-600 text-white">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                <h2 class="text-4xl md:text-6xl font-extrabold tracking-tight">Discover God's Own Country</h2>
+                <p class="mt-4 max-w-3xl mx-auto text-lg md:text-xl text-teal-100">
+                    An interactive journey through Kerala's serene backwaters, lush hill stations, vibrant culture, and pristine beaches. Start your adventure below.
+                </p>
+            </div>
+        </section>
+
+        <!-- About This Guide / Overview Section -->
+        <section id="overview" class="py-16 container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h3 class="text-3xl font-bold text-stone-900">About This Guide: Top Tourist Places in Kerala</h3>
+                <p class="mt-2 max-w-2xl mx-auto text-stone-600">
+                    Kerala, often called “God’s Own Country,” boasts a diverse array of landscapes—from misty hill stations and sprawling tea plantations to serene backwaters, lush wildlife sanctuaries, pristine beaches, and rich cultural sites. Below is a curated list of 20 top places to visit in Kerala, organized by category, with concise descriptions and citations for further reading.
+                </p>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow-lg mb-12">
+                <h4 class="text-xl font-bold text-stone-800 mb-4">Top 20 Places to Visit in Kerala:</h4>
+                <ul class="list-decimal pl-5 text-stone-700 space-y-4">
+                    <li>
+                        <strong class="text-teal-700">Munnar</strong>
+                        <p class="mt-1">A breathtaking hill station famous for its sprawling tea plantations, misty hills, and cool climate—perfect for nature lovers.</p>
+                        <ul class="list-disc pl-5 text-sm mt-2 space-y-1">
+                            <li><strong class="font-medium">Highlights</strong>: Rolling tea estates, Eravikulam National Park (home to Nilgiri Tahr), Attukal Waterfalls, and Neelakurinji blooms (once every 12 years).</li>
+                            <li><strong class="font-medium">Experience</strong>: Tea-tasting at Tata Tea Museum and jeep safaris to Kolukkumalai, the world’s highest tea garden.</li>
+                            <li><strong class="font-medium">Best Time</strong>: Year-round; peak in September–May.</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <strong class="text-teal-700">Alleppey (Alappuzha)</strong>
+                        <p class="mt-1">Renowned for its picturesque backwaters, houseboat cruises, and the annual Nehru Trophy Boat Race, often dubbed the "Venice of the East."</p>
+                        <ul class="list-disc pl-5 text-sm mt-2 space-y-1">
+                            <li><strong class="font-medium">Highlights</strong>: Backwater houseboat cruises on Vembanad Lake, Nehru Trophy Snake Boat Race (August/Sept), Marari Beach, and Kuttanad's below-sea-level farming.</li>
+                            <li><strong class="font-medium">Experience</strong>: Overnight stays in traditional "kettuvallam" houseboats.</li>
+                            <li><strong class="font-medium">Best Time</strong>: October–March.</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <strong class="text-teal-700">Kochi (Cochin)</strong>
+                        <p class="mt-1">A historic port city blending Indian, Portuguese, and Dutch influences, known for its Chinese fishing nets, colonial architecture, and vibrant markets.</p>
+                        <ul class="list-disc pl-5 text-sm mt-2 space-y-1">
+                            <li><strong class="font-medium">Highlights</strong>: Chinese fishing nets at Fort Kochi, Mattancherry Palace, Jew Town, and St. Francis Church.</li>
+                            <li><strong class="font-medium">Experience</strong>: Kathakali dance performances and sunset backwater cruises.</li>
+                            <li><strong class="font-medium">Best Time</strong>: November–February.</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <strong class="text-teal-700">Wayanad</strong>
+                        <p class="mt-1">A lush hill station with rolling green hills, wildlife sanctuaries, spice plantations, and opportunities for trekking and camping.</p>
+                        <ul class="list-disc pl-5 text-sm mt-2 space-y-1">
+                            <li><strong class="font-medium">Highlights</strong>: Chembra Peak's heart-shaped lake, Edakkal Caves (prehistoric carvings), Soochipara Falls, and Wayanad Wildlife Sanctuary. Also, waterfalls (Soochipara, Meenmutty), bamboo rafting at Kuruva Island, and the Banasura Sagar Dam.</li>
+                            <li><strong class="font-medium">Experience</strong>: Bamboo rafting on Kuruva Island and spice plantation tours.</li>
+                            <li><strong class="font-medium">Best Time</strong>: October–May.</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <strong class="text-teal-700">Varkala</strong>
+                        <p class="mt-1">A coastal gem with dramatic cliffs, golden beaches, and a laid-back vibe, ideal for relaxation and water sports.</p>
+                        <ul class="list-disc pl-5 text-sm mt-2 space-y-1">
+                            <li><strong class="font-medium">Highlights</strong>: Cliffside panoramas, Papanasam Beach, cliff-top cafes, ancient Janardhana Swamy Temple.</li>
+                            <li><strong class="font-medium">Experience</strong>: Yoga retreats and cliffside dining.</li>
+                            <li><strong class="font-medium">Best Time</strong>: October–February.</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <strong class="text-teal-700">Thekkady</strong>
+                        <p class="mt-1">Home to Periyar National Park, offering wildlife safaris, bamboo rafting, and tours of aromatic spice plantations.</p>
+                        <ul class="list-disc pl-5 text-sm mt-2 space-y-1">
+                            <li><strong class="font-medium">Highlights</strong>: Periyar Wildlife Sanctuary, bamboo rafting, spice plantations (cardamom, pepper).</li>
+                            <li><strong class="font-medium">Experience</strong>: Tiger trail treks and tribal village visits.</li>
+                            <li><strong class="font-medium">Best Time</strong>: September–May.</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <strong class="text-teal-700">Kumarakom</strong>
+                        <p class="mt-1">A peaceful backwater retreat with bird sanctuaries, luxury resorts, and serene boating experiences.</p>
+                        <ul class="list-disc pl-5 text-sm mt-2 space-y-1">
+                            <li><strong class="font-medium">Highlights</strong>: Vembanad Lake backwaters, Kumarakom Bird Sanctuary (migratory Siberian cranes), and freshwater prawn farming.</li>
+                            <li><strong class="font-medium">Experience</strong>: Luxury houseboat stays and village walks.</li>
+                            <li><strong class="font-medium">Best Time</strong>: September–March.</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <strong class="text-teal-700">Kovalam</strong>
+                        <p class="mt-1">A lively beach town with crescent-shaped beaches, resorts, and water activities like surfing and swimming.</p>
+                        <ul class="list-disc pl-5 text-sm mt-2 space-y-1">
+                            <li><strong class="font-medium">Highlights</strong>: Lighthouse Beach, Hawa Beach, and Ayurvedic wellness centers.</li>
+                            <li><strong class="font-medium">Experience</strong>: Surfing, parasailing, and catamaran rides.</li>
+                            <li><strong class="font-medium">Best Time</strong>: September–March.</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <strong class="text-teal-700">Thrissur</strong>
+                        <p class="mt-1">Kerala’s cultural capital, famous for its temples, festivals, and the grand Thrissur Pooram celebration.</p>
+                        <ul class="list-disc pl-5 text-sm mt-2 space-y-1">
+                            <li><strong class="font-medium">Highlights</strong>: Thrissur Pooram festival, Vadakkunnathan Temple (UNESCO-awarded wooden architecture).</li>
+                            <li><strong class="font-medium">Experience</strong>: Cultural walks and elephant sanctuary visits.</li>
+                            <li><strong class="font-medium">Best Time</strong>: November–May.</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <strong class="text-teal-700">Kannur</strong>
+                        <p class="mt-1">A cultural hub known for its handloom industry and the vibrant, ritualistic Theyyam performances.</p>
+                        <ul class="list-disc pl-5 text-sm mt-2 space-y-1">
+                            <li><strong class="font-medium">Highlights</strong>: Theyyam rituals, Muzhappilangad Drive-in Beach, and St. Angelo Fort.</li>
+                            <li><strong class="font-medium">Experience</strong>: Handloom weaving tours and sunset kayaking.</li>
+                            <li><strong class="font-medium">Best Time</strong>: October–March.</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <strong class="text-teal-700">Bekal</strong>
+                        <p class="mt-1">Features a historic fort and a tranquil beach, offering stunning views and a peaceful escape.</p>
+                        <ul class="list-disc pl-5 text-sm mt-2 space-y-1">
+                            <li><strong class="font-medium">Highlights</strong>: Bekal Fort (largest in Kerala), Kappil Beach, and backwater estuaries.</li>
+                            <li><strong class="font-medium">Experience</strong>: Coastal walks and Theyyam ritual performances.</li>
+                            <li><strong class="font-medium">Best Time</strong>: October–March.</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <strong class="text-teal-700">Athirappilly</strong>
+                        <p class="mt-1">Known as the "Niagara of India," this spot boasts majestic waterfalls surrounded by dense forests.</p>
+                        <ul class="list-disc pl-5 text-sm mt-2 space-y-1">
+                            <li><strong class="font-medium">Highlights</strong>: Majestic waterfalls, dense forests.</li>
+                            <li><strong class="font-medium">Experience</strong>: Waterfall viewing and nature walks.</li>
+                            <li><strong class="font-medium">Best Time</strong>: June–September (monsoon-fed gushing falls) or October–December.</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <strong class="text-teal-700">Ponmudi</strong>
+                        <p class="mt-1">A lesser-known hill station with winding trails, panoramic views, and a refreshing climate.</p>
+                        <ul class="list-disc pl-5 text-sm mt-2 space-y-1">
+                            <li><strong class="font-medium">Highlights</strong>: Mist‑shrouded hills, scenic views.</li>
+                            <li><strong class="font-medium">Experience</strong>: Trekking and enjoying cool weather.</li>
+                            <li><strong class="font-medium">Best Time</strong>: October–March.</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <strong class="text-teal-700">Guruvayur</strong>
+                        <p class="mt-1">A pilgrimage town centered around the famous Guruvayur Temple, dedicated to Lord Krishna.</p>
+                        <ul class="list-disc pl-5 text-sm mt-2 space-y-1">
+                            <li><strong class="font-medium">Highlights</strong>: Guruvayur Temple (Krishna pilgrimage), Punnathur Kotta elephant sanctuary.</li>
+                            <li><strong class="font-medium">Experience</strong>: Temple visits and cultural events.</li>
+                            <li><strong class="font-medium">Best Time</strong>: October–March.</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <strong class="text-teal-700">Sabarimala</strong>
+                        <p class="mt-1">A sacred pilgrimage site in the Western Ghats, drawing millions of Lord Ayyappa devotees annually.</p>
+                        <ul class="list-disc pl-5 text-sm mt-2 space-y-1">
+                            <li><strong class="font-medium">Highlights</strong>: Sacred pilgrimage, Lord Ayyappa temple.</li>
+                            <li><strong class="font-medium">Experience</strong>: Spiritual treks and religious ceremonies.</li>
+                            <li><strong class="font-medium">Best Time</strong>: November–January (Mandala-Makaravilakku season).</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <strong class="text-teal-700">Kozhikode (Calicut)</strong>
+                        <p class="mt-1">A historic city with beaches, spice markets, and a rich culinary legacy, especially its Malabar cuisine.</p>
+                        <ul class="list-disc pl-5 text-sm mt-2 space-y-1">
+                            <li><strong class="font-medium">Highlights</strong>: Kappad Beach (Vasco da Gama’s landing site), Beypore port, and Malabar cuisine.</li>
+                            <li><strong class="font-medium">Experience</strong>: Kallummakkaya (mussels) feasts and handloom shopping.</li>
+                            <li><strong class="font-medium">Best Time</strong>: October–March.</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <strong class="text-teal-700">Palakkad</strong>
+                        <p class="mt-1">Known for its forts, temples, and the scenic Palakkad Gap, blending history with natural beauty.</p>
+                        <ul class="list-disc pl-5 text-sm mt-2 space-y-1">
+                            <li><strong class="font-medium">Highlights</strong>: Palakkad Fort, Silent Valley National Park, and Malampuzha Dam.</li>
+                            <li><strong class="font-medium">Experience</strong>: Exploring historical sites and nature trails.</li>
+                            <li><strong class="font-medium">Best Time</strong>: October–March.</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <strong class="text-teal-700">Idukki</strong>
+                        <p class="mt-1">A rugged hill station featuring the Idukki Dam, wildlife sanctuaries, and spice gardens.</p>
+                        <ul class="list-disc pl-5 text-sm mt-2 space-y-1">
+                            <li><strong class="font-medium">Highlights</strong>: Idukki Arch Dam (Asia’s largest), Periyar National Park, and Kalvari Mount viewpoints.</li>
+                            <li><strong class="font-medium">Experience</strong>: Jungle safaris and spice garden tours.</li>
+                            <li><strong class="font-medium">Best Time</strong>: October–June.</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <strong class="text-teal-700">Malappuram</strong>
+                        <p class="mt-1">Offers insight into Kerala’s Islamic heritage with its mosques, festivals, and traditional architecture.</p>
+                        <ul class="list-disc pl-5 text-sm mt-2 space-y-1">
+                            <li><strong class="font-medium">Highlights</strong>: Tirur (birthplace of Thunchaththu Ezhuthachan), Kottakkal Arya Vaidya Sala.</li>
+                            <li><strong class="font-medium">Experience</strong>: Exploring mosques and traditional architecture.</li>
+                            <li><strong class="font-medium">Best Time</strong>: October–March.</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <strong class="text-teal-700">Cherai</strong>
+                        <p class="mt-1">A serene beach near Kochi, famous for calm waters, dolphin sightings, and a relaxing atmosphere.</p>
+                        <ul class="list-disc pl-5 text-sm mt-2 space-y-1">
+                            <li><strong class="font-medium">Highlights</strong>: Calm waters, dolphin sightings, and a relaxing atmosphere.</li>
+                            <li><strong class="font-medium">Experience</strong>: Beach activities and serene relaxation.</li>
+                            <li><strong class="font-medium">Best Time</strong>: October–March.</li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <h4 class="text-xl font-bold text-stone-800 mt-6 mb-4">Summary & Travel Tips:</h4>
+                <p class="text-stone-700 mb-4">
+                    This list combines Kerala’s most iconic destinations—based on tourist popularity, natural beauty, and cultural significance—with a few hidden gems. Whether you’re drawn to hill stations, beaches, backwaters, or heritage sites, Kerala has something for everyone. If you’re planning a visit, consider your interests (adventure, relaxation, or spirituality) to prioritize the places that suit you best!
+                </p>
+                <ul class="list-disc pl-5 text-stone-700 space-y-2">
+                    <li><strong class="font-medium">Best time to visit</strong>: Monsoon (Jun–Sep) for lush greenery & waterfalls and Peak season (Oct–Mar) for cooler weather and festivals.</li>
+                    <li><strong class="font-medium">Must‑experience activities</strong>: Houseboat cruises in Alleppey/Kumarakom, wildlife safaris in Periyar & Athirappilly, tea‑garden treks in Munnar, beach sunsets in Kovalam/Varkala.</li>
+                    <li><strong class="font-medium">Wellness tip</strong>: Try Ayurvedic spa treatments—especially around Kovalam—for a rejuvenating Kerala experience.</li>
+                    <li><strong class="font-medium">Ideal Duration</strong>: 7–10 days for a comprehensive tour.</li>
+                    <li><strong class="font-medium">Transport</strong>: Cochin International Airport (COK) is the main hub; use trains/buses for inter-city travel.</li>
+                    <li><strong class="font-medium">Local Cuisine</strong>: Sample Keralite specialties—Malabar biryani in Kozhikode, seafood in Kochi/Alleppey, Kerala sadya (feast) during festivals, and traditional snacks like banana fritters and appam with stew.</li>
+                    <li><strong class="font-medium">Cultural Sensitivity</strong>: Dress modestly at temples; follow guidelines during pilgrimages (e.g., Sabarimala’s code).</li>
+                    <li><strong class="font-medium">Eco-Conscious Travel</strong>: Use responsible tourism operators in wildlife sanctuaries, avoid plastic use in sensitive ecosystems, and respect local communities.</li>
+                </ul>
+                 <p class="text-stone-700 mt-6">
+                    For deeper insights or itinerary planning, refer to detailed guides like <a href="https://www.ekeralatourism.net/blog/places-to-visit-in-kerala/" target="_blank" class="text-teal-600 hover:underline">Ekerala Tourism</a> or <a href="https://www.holidify.com/state/kerala/top-destinations-places-to-visit.html" target="_blank" class="text-teal-600 hover:underline">Holidify</a>. Kerala’s diversity ensures every traveler finds their bliss—from adrenaline-packed hills to serene backwaters! 🌴✨
+                </p>
+            </div>
+        </section>
+
+
+        <!-- Main Explorer Section -->
+        <main id="explorer" class="py-16 container mx-auto px-4 sm:px-6 lg:px-8">
+            <!-- Introduction to Explorer -->
+            <div class="text-center mb-12">
+                <h3 class="text-3xl font-bold text-stone-900">Explore Top Destinations</h3>
+                <p class="mt-2 max-w-2xl mx-auto text-stone-600">
+                    What kind of experience are you looking for? Click a theme below or interact with the chart to filter destinations and find your perfect getaway in Kerala.
+                </p>
+            </div>
+
+            <!-- Filter Controls -->
+            <div id="filter-controls" class="flex flex-wrap justify-center gap-3 md:gap-4 mb-12">
+            </div>
+
+            <!-- Content Grid & Chart -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-12 items-start">
+                <div id="destinations-grid" class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Destination cards will be injected here -->
+                </div>
+                <aside class="lg:col-span-1 lg:sticky top-24">
+                    <div class="bg-white p-6 rounded-xl shadow-lg">
+                       <h4 class="text-xl font-bold text-center mb-4 text-stone-800">Destinations by Type</h4>
+                        <div class="chart-container">
+                            <canvas id="type-chart"></canvas>
+                        </div>
+                         <p class="text-xs text-stone-500 text-center mt-4">Click a section of the chart to filter the list.</p>
+                    </div>
+                </aside>
+            </div>
+        </main>
+
+        <!-- Thematic Highlights Section -->
+        <section id="themes" class="bg-white py-16">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-12">
+                    <h3 class="text-3xl font-bold text-stone-900">Quintessential Kerala Experiences</h3>
+                    <p class="mt-2 max-w-3xl mx-auto text-stone-600">
+                        Beyond places, Kerala offers profound experiences that define its soul. Explore these core themes that weave through the fabric of 'God's Own Country'.
+                    </p>
+                </div>
+                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div class="p-6 bg-stone-50 rounded-lg">
+                        <h4 class="text-xl font-bold text-teal-700 mb-2">🛶 Iconic Backwaters</h4>
+                        <p class="text-stone-600">The soul of Kerala lies in its tranquil backwaters. Glide through a serene network of lakes, canals, and lagoons on a traditional houseboat (*kettuvallam*), witnessing local life unfold in places like Alleppey, Kumarakom, and Kollam.</p>
+                    </div>
+                    <div class="p-6 bg-stone-50 rounded-lg">
+                        <h4 class="text-xl font-bold text-teal-700 mb-2">🎭 Cultural Performances</h4>
+                        <p class="text-stone-600">Immerse yourself in living traditions. Witness a vibrant Kathakali performance, a classical dance-drama known for its elaborate costumes and makeup, or feel the energy of Kalaripayattu, one of the world's oldest martial arts.</p>
+                    </div>
+                    <div class="p-6 bg-stone-50 rounded-lg">
+                        <h4 class="text-xl font-bold text-teal-700 mb-2">🌿 Authentic Ayurveda</h4>
+                        <p class="text-stone-600">Rejuvenate your mind and body in the birthplace of Ayurveda. Experience holistic wellness with ancient therapeutic treatments like *Shirodhara* and *Abhyangam* at serene wellness centers across the state, from coastal resorts to lakeside retreats.</p>
+                    </div>
+                    <div class="p-6 bg-stone-50 rounded-lg">
+                        <h4 class="text-xl font-bold text-teal-700 mb-2">🍃 Spice & Tea Plantations</h4>
+                        <p class="text-stone-600">Awaken your senses in the verdant plantations of Munnar, Thekkady, and Wayanad. Walk through fragrant gardens of cardamom and pepper, and learn the story of tea from leaf to cup in the misty hills of the Western Ghats.</p>
+                    </div>
+                     <div class="p-6 bg-stone-50 rounded-lg">
+                        <h4 class="text-xl font-bold text-teal-700 mb-2">🐘 Thrilling Wildlife</h4>
+                        <p class="text-stone-600">Explore Kerala's rich biodiversity in its protected sanctuaries. Spot elephants in Thekkady's Periyar Reserve, look for the endangered lion-tailed macaque in Silent Valley, and discover a world of exotic flora and fauna.</p>
+                    </div>
+                    <div class="p-6 bg-stone-50 rounded-lg">
+                        <h4 class="text-xl font-bold text-teal-700 mb-2">🏰 Rich Heritage</h4>
+                        <p class="text-stone-600">Journey through time by exploring historic forts, palaces, and cultural hubs. From the multicultural tapestry of Fort Kochi to the grand temples of Thrissur and the ancient Bekal Fort, Kerala's history is etched into its landscape.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Contact Information Section -->
+        <section class="py-16 bg-white">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-12">
+                    <h3 class="text-3xl font-bold text-stone-900">Contact Information</h3>
+                    <p class="mt-2 max-w-2xl mx-auto text-stone-600">
+                        Here are some additional contacts you might find useful.
+                    </p>
+                </div>
+                <div class="grid md:grid-cols-2 lg:grid-cols-2 gap-8">
+                    <div class="p-6 bg-stone-50 rounded-lg shadow-md">
+                        <h4 class="text-xl font-bold text-teal-700 mb-2">Vishal Hospital (Rajkot)</h4>
+                        <p class="text-stone-600"><strong>Address:</strong> Vishal Hospital, Kailashwadi Main Road, opposite Taluka Police Choki, Junction Plot, Rajkot, Gujarat 360001</p>
+                        <p class="text-stone-600"><strong>Mobile:</strong> <a href="tel:+919228105245" class="text-teal-600 hover:underline">9228105245</a></p>
+                        <p class="text-stone-600"><strong>Landline:</strong> <a href="tel:02812450408" class="text-teal-600 hover:underline">0281-2450408</a></p>
+                        <p class="text-stone-600"><strong>Website:</strong> <a href="https://vishalhospitalrajkot.github.io/" target="_blank" class="text-teal-600 hover:underline">https://vishalhospitalrajkot.github.io/</a></p>
+                    </div>
+                    <div class="p-6 bg-stone-50 rounded-lg shadow-md">
+                        <h4 class="text-xl font-bold text-teal-700 mb-2">Vishal Banquet Hall</h4>
+                        <p class="text-stone-600"><strong>Address:</strong> Vishal Banquet Hall, Gaya-Dobhi Rd, Musatpura, Bihar 823004</p>
+                        <p class="text-stone-600"><strong>Mobile:</strong> <a href="tel:+919228105245" class="text-teal-600 hover:underline">9228105245</a></p>
+                        <p class="text-stone-600"><strong>Website:</strong> <a href="https://vishalbanquethall1.github.io/" target="_blank" class="text-teal-600 hover:underline">https://vishalbanquethall1.github.io/</a></p>
+                    </div>
+                    <div class="p-6 bg-stone-50 rounded-lg shadow-md">
+                        <h4 class="text-xl font-bold text-teal-700 mb-2">Vishal Hospital (Bihar)</h4>
+                        <p class="text-stone-600"><strong>Address:</strong> Vishal Hospital, Gaya-Dobhi Rd, Musatpura, Bihar 823004</p>
+                        <p class="text-stone-600"><strong>Mobile:</strong> <a href="tel:+919228105245" class="text-teal-600 hover:underline">9228105245</a></p>
+                        <p class="text-stone-600"><strong>Website:</strong> <a href="https://vishalhospitalrajkot.github.io/vishalhospitalbodhgaya/" target="_blank" class="text-teal-600 hover:underline">https://vishalhospitalrajkot.github.io/vishalhospitalbodhgaya/</a></p>
+                    </div>
+                    <div class="p-6 bg-stone-50 rounded-lg shadow-md">
+                        <h4 class="text-xl font-bold text-teal-700 mb-2">Dr. Anoop Lal Sinha</h4>
+                        <p class="text-stone-600"><strong>Mobile:</strong> <a href="tel:+919228105245" class="text-teal-600 hover:underline">9228105245</a></p>
+                        <p class="text-stone-600"><strong>Website:</strong> <a href="https://vishalhospitalrajkot.github.io/Dr.AnoopLalSinha/" target="_blank" class="text-teal-600 hover:underline">https://vishalhospitalrajkot.github.io/Dr.AnoopLalSinha/</a></p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="bg-stone-800 text-stone-300 py-8">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                <p>An interactive exploration of Kerala's wonders. Designed to inspire your next journey.</p>
+                <p class="text-xs text-stone-500 mt-2">Content derived from various travel guides including <a href="https://www.ekeralatourism.net/blog/places-to-visit-in-kerala/" target="_blank" class="text-teal-400 hover:underline">Ekerala Tourism</a> and <a href="https://www.holidify.com/state/kerala/top-destinations-places-to-visit.html" target="_blank" class="text-teal-400 hover:underline">Holidify</a>.</p>
+            </div>
+        </footer>
+
+    </div>
+
+    <!-- Modal -->
+    <div id="detail-modal" class="modal fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4 invisible opacity-0">
+        <div id="modal-content" class="modal-content bg-white rounded-lg shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto transform scale-95">
+            <div class="sticky top-0 bg-white p-4 sm:p-6 border-b border-stone-200 flex justify-between items-center z-10">
+                <h3 id="modal-title" class="text-2xl font-bold text-teal-700"></h3>
+                <button id="modal-close-btn" class="text-stone-500 hover:text-stone-800 text-3xl font-light">&times;</button>
+            </div>
+            <div class="p-4 sm:p-6">
+                <div class="flex flex-wrap gap-2 mb-4">
+                     <span id="modal-type" class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-teal-600 bg-teal-100"></span>
+                     <span id="modal-region" class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-amber-600 bg-amber-100"></span>
+                </div>
+                <p id="modal-description" class="text-stone-700 leading-relaxed"></p>
+                <div class="mt-6 border-t pt-4">
+                    <h4 class="font-bold text-lg mb-2 text-stone-800">Highlights:</h4>
+                    <p id="modal-highlight" class="text-stone-600"></p>
+                </div>
+                 <div class="mt-4">
+                    <h4 class="font-bold text-lg mb-2 text-stone-800">Experience:</h4>
+                    <p id="modal-feature" class="text-stone-600"></p>
+                </div>
+                <div class="mt-4">
+                    <h4 class="font-bold text-lg mb-2 text-stone-800">Best Time to Visit:</h4>
+                    <p id="modal-best-time" class="text-stone-600"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script type="text/javascript">
+        // Google Translate API initialization
+        function googleTranslateElementInit() {
+            new google.translate.TranslateElement({
+                pageLanguage: 'en',
+                includedLanguages: 'en,hi,gu', // English, Hindi, Gujarati
+                layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+                autoDisplay: false
+            }, 'google_translate_element');
+        }
+    </script>
+    <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            const destinations = [
+                { name: 'Munnar', type: 'Hill Station', region: 'Idukki District', description: 'A breathtaking hill station famous for its sprawling tea plantations, misty hills, and cool climate—perfect for nature lovers.', highlight: 'Rolling tea estates, Eravikulam National Park (home to Nilgiri Tahr), Attukal Waterfalls, and Neelakurinji blooms (once every 12 years).', feature: 'Tea-tasting at Tata Tea Museum and jeep safaris to Kolukkumalai, the world’s highest tea garden.', bestTime: 'Year-round; peak in September–May.' },
+                { name: 'Alleppey (Alappuzha)', type: 'Backwater', region: 'Alappuzha District', description: 'Alappuzha, often called the “Backwater Capital of India” or “Venice of the East,” sits beside Lake Vembanad and is famous for its miles of tranquil canals and houseboat cruises.', highlight: 'Houseboat cruise through palm-fringed backwaters; Nehru Trophy boat race; bird‑watching at Pathiramanal (migratory-bird sanctuary); village walks; Ayurvedic massage.', feature: 'Overnight stays in traditional "kettuvallam" houseboats.', bestTime: 'October–March.' },
+                { name: 'Kochi (Fort Kochi and Mattancherry)', type: 'Cultural/Heritage', region: 'Ernakulam District', description: 'Kochi (Cochin) is Kerala’s most cosmopolitan port city, blending colonial history with vibrant culture.', highlight: 'Iconic Chinese fishing nets at Fort Kochi; Mattancherry (“Dutch”) Palace with 17th-century Ramayana murals; St. Francis Church; spice markets; Kerala Kathakali dance.', feature: 'Kathakali dance performances and sunset backwater cruises.', bestTime: 'November–February.' },
+                { name: 'Wayanad', type: 'Hill Station', region: 'Wayanad District', description: 'Nestled in the Western Ghats, Wayanad is a lush hill district of Kerala known for its rolling tea and spice plantations, deep forests and wildlife.', highlight: 'Chembra Peak\'s heart-shaped lake, prehistoric carvings at Edakkal Caves, Soochipara Falls, and Wayanad Wildlife Sanctuary. Also, waterfalls (Soochipara, Meenmutty), bamboo rafting at Kuruva Island, and the Banasura Sagar Dam.', feature: 'Bamboo rafting on Kuruva Island and spice plantation tours.', bestTime: 'October–May.' },
+                { name: 'Varkala', type: 'Coastal/Beach', region: 'Thiruvananthapuram District', description: 'A coastal gem with dramatic cliffs, golden beaches, and a laid-back vibe, ideal for relaxation and water sports.', highlight: 'Cliffside panoramas, Papanasam Beach, cliff‑top cafes, ancient Janardhana Swamy Temple.', feature: 'Yoga retreats and cliffside dining.', bestTime: 'October–February.' },
+                { name: 'Thekkady', type: 'Wildlife', region: 'Idukki District', description: 'Home to Periyar National Park, offering wildlife safaris, bamboo rafting, and tours of aromatic spice plantations.', highlight: 'Periyar Wildlife Sanctuary, bamboo rafting, spice plantations (cardamom, pepper).', feature: 'Tiger trail treks and tribal village visits.', bestTime: 'September–May.' },
+                { name: 'Kumarakom', type: 'Backwater', region: 'Kottayam District', description: 'A peaceful backwater retreat with bird sanctuaries, luxury resorts, and serene boating experiences.', highlight: 'Vembanad Lake backwaters, Kumarakom Bird Sanctuary (migratory Siberian cranes), and freshwater prawn farming.', feature: 'Luxury houseboat stays and village walks.', bestTime: 'September–March.' },
+                { name: 'Kovalam Beach', type: 'Coastal/Beach', region: 'Thiruvananthapuram District', description: 'A lively beach town with crescent-shaped beaches, resorts, and water activities like surfing and swimming.', highlight: 'Lighthouse Beach, Hawa Beach, and Ayurvedic wellness centers.', feature: 'Surfing, parasailing, and catamaran rides.', bestTime: 'September–March.' },
+                { name: 'Thrissur', type: 'Cultural/Heritage', region: 'Thrissur District', description: 'Kerala’s cultural capital, famous for its temples, festivals, and the grand Thrissur Pooram celebration.', highlight: 'Thrissur Pooram festival, Vadakkunnathan Temple (UNESCO-awarded wooden architecture).', feature: 'Cultural walks and elephant sanctuary visits.', bestTime: 'November–May.' },
+                { name: 'Kannur', type: 'Cultural/Heritage', region: 'Kannur District', description: 'A cultural hub known for its handloom industry and the vibrant, ritualistic Theyyam performances.', highlight: 'Theyyam rituals, Muzhappilangad Drive-in Beach, and St. Angelo Fort.', feature: 'Handloom weaving tours and sunset kayaking.', bestTime: 'October–March.' },
+                { name: 'Bekal', type: 'Cultural/Heritage', region: 'Kasargod District', description: 'Features a historic fort and a tranquil beach, offering stunning views and a peaceful escape.', highlight: 'Bekal Fort (largest in Kerala), Kappil Beach, and backwater estuaries.', feature: 'Coastal walks and Theyyam ritual performances.', bestTime: 'October–March.' },
+                { name: 'Athirappilly Falls', type: 'Waterfalls/Nature', region: 'Thrissur District', description: 'Known as the "Niagara of India," this spot boasts majestic waterfalls surrounded by dense forests.', highlight: 'Majestic waterfalls, dense forests.', feature: 'Waterfall viewing and nature walks.', bestTime: 'June–September (monsoon-fed gushing falls) or October–December.' },
+                { name: 'Ponmudi', type: 'Hill Station', region: 'Thiruvananthapuram District', description: 'A lesser-known hill station with winding trails, panoramic views, and a refreshing climate.', highlight: 'Mist‑shrouded hills, scenic views.', feature: 'Trekking and enjoying cool weather.', bestTime: 'October–March.' },
+                { name: 'Guruvayur', type: 'Spiritual', region: 'Thrissur District', description: 'A pilgrimage town centered around the famous Guruvayur Temple, dedicated to Lord Krishna.', highlight: 'Guruvayur Temple (Krishna pilgrimage), Punnathur Kotta elephant sanctuary.', feature: 'Temple visits and cultural events.', bestTime: 'October–March.' },
+                { name: 'Sabarimala', type: 'Spiritual', region: 'Pathanamthitta District', description: 'A sacred pilgrimage site in the Western Ghats, drawing millions of Lord Ayyappa devotees annually.', highlight: 'Sacred pilgrimage, Lord Ayyappa temple.', feature: 'Spiritual treks and religious ceremonies.', bestTime: 'November–January (Mandala-Makaravilakku season).' },
+                { name: 'Kozhikode (Calicut)', type: 'Cultural/Heritage', region: 'Kozhikode District', description: 'A historic city with beaches, spice markets, and a rich culinary legacy, especially its Malabar cuisine.', highlight: 'Kappad Beach (Vasco da Gama’s landing site), Beypore port, and Malabar cuisine.', feature: 'Kallummakkaya (mussels) feasts and handloom shopping.', bestTime: 'October–March.' },
+                { name: 'Palakkad', type: 'Cultural/Heritage', region: 'Palakkad District', description: 'Known for its forts, temples, and the scenic Palakkad Gap, blending history with natural beauty.', highlight: 'Palakkad Fort, Silent Valley National Park, and Malampuzha Dam.', feature: 'Exploring historical sites and nature trails.', bestTime: 'October–March.' },
+                { name: 'Idukki', type: 'Hill Station', region: 'Idukki District', description: 'A rugged hill station featuring the Idukki Dam, wildlife sanctuaries, and spice gardens.', highlight: 'Idukki Arch Dam (Asia’s largest), Periyar National Park, and Kalvari Mount viewpoints.', feature: 'Jungle safaris and spice garden tours.', bestTime: 'October–June.' },
+                { name: 'Malappuram', type: 'Cultural/Heritage', region: 'Malappuram District', description: 'Offers insight into Kerala’s Islamic heritage with its mosques, festivals, and traditional architecture.', highlight: 'Tirur (birthplace of Thunchaththu Ezhuthachan), Kottakkal Arya Vaidya Sala.', feature: 'Exploring mosques and traditional architecture.', bestTime: 'October–March.' },
+                { name: 'Cherai', type: 'Coastal/Beach', region: 'Ernakulam District', description: 'A serene beach near Kochi, famous for calm waters, dolphin sightings, and a relaxing atmosphere.', highlight: 'Calm waters, dolphin sightings, and a relaxing atmosphere.', feature: 'Beach activities and serene relaxation.', bestTime: 'October–March.' }
+            ];
+
+            const destinationTypes = [...new Set(destinations.map(d => d.type))];
+            let currentFilter = 'All';
+
+            const grid = document.getElementById('destinations-grid');
+            const filterControls = document.getElementById('filter-controls');
+            const modal = document.getElementById('detail-modal');
+            const modalContent = document.getElementById('modal-content');
+            const modalCloseBtn = document.getElementById('modal-close-btn');
+            const chartCanvas = document.getElementById('type-chart').getContext('2d');
+            let typeChart;
+
+            const typeIcons = {
+                'Backwater': '🛶',
+                'Hill Station': '🏞️',
+                'Cultural/Heritage': '🏰',
+                'Coastal/Beach': '🏖️',
+                'Wildlife': '🐘',
+                'Waterfalls/Nature': '💧',
+                'Adventure': '🧗',
+                'Spiritual': '🙏'
+            };
+
+            const typeColors = {
+                'Backwater': 'rgba(56, 189, 248, 0.8)', // sky-400
+                'Hill Station': 'rgba(34, 197, 94, 0.8)', // green-500
+                'Cultural/Heritage': 'rgba(249, 115, 22, 0.8)', // orange-500
+                'Coastal/Beach': 'rgba(251, 191, 36, 0.8)', // amber-400
+                'Wildlife': 'rgba(132, 204, 22, 0.8)', // lime-500
+                'Waterfalls/Nature': 'rgba(99, 102, 241, 0.8)', // indigo-500
+                'Adventure': 'rgba(239, 68, 68, 0.8)', // red-500
+                'Spiritual': 'rgba(128, 0, 128, 0.8)' // purple
+            };
+
+            const typeBorderColors = {
+                'Backwater': 'rgb(56, 189, 248)',
+                'Hill Station': 'rgb(34, 197, 94)',
+                'Cultural/Heritage': 'rgb(249, 115, 22)',
+                'Coastal/Beach': 'rgb(251, 191, 36)',
+                'Wildlife': 'rgb(132, 204, 22)',
+                'Waterfalls/Nature': 'rgb(99, 102, 241)',
+                'Adventure': 'rgb(239, 68, 68)',
+                'Spiritual': 'rgb(128, 0, 128)'
+            };
+
+            function createFilterControls() {
+                const allButton = document.createElement('button');
+                allButton.textContent = 'All Destinations';
+                allButton.dataset.filter = 'All';
+                allButton.className = 'filter-btn px-4 py-2 bg-teal-600 text-white rounded-full font-semibold shadow-md hover:bg-teal-700 transition transform hover:-translate-y-0.5 active-filter';
+                filterControls.appendChild(allButton);
+
+                destinationTypes.forEach(type => {
+                    const button = document.createElement('button');
+                    button.innerHTML = `${typeIcons[type] || '📍'} ${type}`;
+                    button.dataset.filter = type;
+                    button.className = 'filter-btn px-4 py-2 bg-white text-stone-700 rounded-full font-semibold shadow-md hover:bg-stone-100 transition transform hover:-translate-y-0.5';
+                    filterControls.appendChild(button);
+                });
+
+                document.querySelectorAll('.filter-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        currentFilter = e.currentTarget.dataset.filter;
+                        updateActiveFilter();
+                        renderDestinations();
+                    });
+                });
+            }
+
+            function updateActiveFilter() {
+                 document.querySelectorAll('.filter-btn').forEach(btn => {
+                    if (btn.dataset.filter === currentFilter) {
+                        btn.classList.add('active-filter');
+                        btn.classList.remove('bg-white', 'text-stone-700', 'hover:bg-stone-100');
+                        btn.classList.add('bg-teal-600', 'text-white');
+                    } else {
+                        btn.classList.remove('active-filter', 'bg-teal-600', 'text-white');
+                         if(btn.dataset.filter !== 'All') {
+                             btn.classList.add('bg-white', 'text-stone-700', 'hover:bg-stone-100');
+                         }
+                    }
+                });
+            }
+
+            function renderDestinations() {
+                grid.innerHTML = '';
+                const filtered = destinations.filter(d => currentFilter === 'All' || d.type === currentFilter);
+
+                if (filtered.length === 0) {
+                    grid.innerHTML = `<p class="md:col-span-2 text-center text-stone-500">No destinations match this category. Please select another.</p>`;
+                    return;
+                }
+
+                filtered.forEach(d => {
+                    const card = document.createElement('div');
+                    card.className = 'bg-white rounded-xl shadow-lg overflow-hidden transform hover:-translate-y-1 transition-transform duration-300 cursor-pointer';
+                    card.dataset.name = d.name;
+                    card.innerHTML = `
+                        <div class="p-6">
+                            <div class="flex justify-between items-start">
+                                <h4 class="text-xl font-bold text-stone-800 mb-2">${d.name}</h4>
+                                <span class="text-2xl">${typeIcons[d.type] || '📍'}</span>
+                            </div>
+                            <span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-teal-600 bg-teal-100">${d.type}</span>
+                            <p class="mt-3 text-stone-600 text-sm h-16 overflow-hidden">${d.description}</p>
+                            <button class="mt-4 text-teal-600 font-semibold hover:text-teal-800">Learn More &rarr;</button>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+
+                document.querySelectorAll('#destinations-grid div').forEach(card => {
+                    card.addEventListener('click', () => showModal(card.dataset.name));
+                });
+            }
+
+            function showModal(name) {
+                const destination = destinations.find(d => d.name === name);
+                if (!destination) return;
+
+                document.getElementById('modal-title').textContent = destination.name;
+                document.getElementById('modal-type').textContent = destination.type;
+                document.getElementById('modal-region').textContent = destination.region;
+                document.getElementById('modal-description').textContent = destination.description;
+                document.getElementById('modal-highlight').innerHTML = destination.highlight;
+                document.getElementById('modal-feature').innerHTML = destination.feature;
+                document.getElementById('modal-best-time').textContent = destination.bestTime;
+
+
+                modal.classList.remove('invisible', 'opacity-0');
+                modalContent.classList.remove('scale-95');
+                document.body.style.overflow = 'hidden';
+            }
+
+            function hideModal() {
+                modal.classList.add('invisible', 'opacity-0');
+                modalContent.classList.add('scale-95');
+                document.body.style.overflow = 'auto';
+            }
+
+            function createDestinationChart() {
+                const typeCounts = destinations.reduce((acc, d) => {
+                    acc[d.type] = (acc[d.type] || 0) + 1;
+                    return acc;
+                }, {});
+
+                const labels = Object.keys(typeCounts);
+                const data = Object.values(typeCounts);
+
+                const backgroundColors = labels.map(label => typeColors[label] || 'rgba(107, 114, 128, 0.8)');
+                const borderColors = labels.map(label => typeBorderColors[label] || 'rgb(107, 114, 128)');
+
+                if (typeChart) {
+                    typeChart.destroy();
+                }
+
+                typeChart = new Chart(chartCanvas, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Destinations',
+                            data: data,
+                            backgroundColor: backgroundColors,
+                            borderColor: borderColors,
+                            borderWidth: 2,
+                            hoverOffset: 12
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    padding: 15,
+                                    font: { size: 12 }
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        if (context.parsed !== null) {
+                                            label += context.parsed;
+                                        }
+                                        return label;
+                                    }
+                                }
+                            }
+                        },
+                        onClick: (event, elements) => {
+                            if (elements.length > 0) {
+                                const chartElement = elements[0];
+                                const label = typeChart.data.labels[chartElement.index];
+                                currentFilter = label;
+                                updateActiveFilter();
+                                renderDestinations();
+                            }
+                        }
+                    }
+                });
+            }
+
+            modalCloseBtn.addEventListener('click', hideModal);
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    hideModal();
+                }
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && !modal.classList.contains('invisible')) {
+                    hideModal();
+                }
+            });
+
+            createFilterControls();
+            renderDestinations();
+            createDestinationChart();
+        });
+    </script>
+</body>
+</html>
